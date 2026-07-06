@@ -1,0 +1,480 @@
+/* ============================================================
+   Focus Countdown — layout, flip-clock geometry, and theming.
+   Color variables (--bg, --card, --digit, ...) are injected by
+   themes.js. Geometry variables live here.
+   ============================================================ */
+
+:root {
+  /* Fallback colors (overwritten by the active theme). */
+  --bg: #0e1116;
+  --bg-alt: #161b22;
+  --card: #1c2230;
+  --card-shade: #161b27;
+  --digit: #f2f5fb;
+  --accent: #6ea8fe;
+  --text: #aab3c5;
+  --muted: #5b6577;
+
+  /* Responsive flip-card geometry. */
+  --card-w: clamp(54px, 11vw, 128px);
+  --card-h: clamp(80px, 16vw, 188px);
+  --digit-size: clamp(52px, 12vw, 150px);
+  --card-gap: clamp(4px, 0.7vw, 9px);
+  --card-radius: clamp(6px, 1vw, 12px);
+
+  --flip-ms: 260ms;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(120% 120% at 50% 0%, var(--bg-alt) 0%, var(--bg) 70%);
+  transition: background 600ms ease;
+}
+
+/* ---------- Stage ---------- */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(20px, 4vh, 48px);
+}
+
+/* ---------- Flip clock ---------- */
+.clock {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.6vw, 22px);
+  user-select: none;
+}
+
+.flip-group {
+  display: flex;
+  gap: var(--card-gap);
+}
+
+.flip-sep {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(10px, 2.4vh, 26px);
+  padding: 0 clamp(2px, 0.4vw, 6px);
+}
+
+.flip-sep span {
+  width: clamp(7px, 1.3vw, 13px);
+  height: clamp(7px, 1.3vw, 13px);
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+/* A single flip card. */
+.flip {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  perspective: 320px;
+  font-size: var(--digit-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.35));
+}
+
+/* Every half (static + folding leaves) shares this geometry. */
+.flip__top,
+.flip__bottom,
+.flip__leaf--top,
+.flip__leaf--bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  background: var(--card);
+  color: var(--digit);
+  backface-visibility: hidden;
+}
+
+.flip__top,
+.flip__leaf--top {
+  top: 0;
+  align-items: flex-start;
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.flip__bottom,
+.flip__leaf--bottom {
+  bottom: 0;
+  align-items: flex-end;
+  background: var(--card-shade);
+  border-radius: 0 0 var(--card-radius) var(--card-radius);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* The seam line between the two halves. */
+.flip::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-0.5px);
+  background: rgba(0, 0, 0, 0.28);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.flip span {
+  line-height: var(--card-h);
+  display: block;
+}
+
+/* Folding leaves sit above the static halves. */
+.flip__leaf--top,
+.flip__leaf--bottom {
+  z-index: 3;
+}
+
+.flip__leaf--top {
+  transform-origin: 50% 100%;
+  transform: rotateX(-90deg);
+}
+
+.flip__leaf--bottom {
+  transform-origin: 50% 0%;
+  transform: rotateX(90deg);
+}
+
+/* When .flipping is added, run the two-stage fold. */
+.flip.flipping .flip__leaf--top {
+  animation: flipTopDown var(--flip-ms) ease-in forwards;
+}
+
+.flip.flipping .flip__leaf--bottom {
+  animation: flipBottomDown var(--flip-ms) ease-out var(--flip-ms) forwards;
+}
+
+@keyframes flipTopDown {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(-90deg);
+  }
+}
+
+@keyframes flipBottomDown {
+  0% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* ---------- Setup (time entry) ---------- */
+.setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2.4vh, 24px);
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.time-input {
+  width: clamp(56px, 9vw, 92px);
+  text-align: center;
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 8px 4px;
+  color: var(--digit);
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.time-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* Hide number spinners for a cleaner look. */
+.time-input::-webkit-outer-spin-button,
+.time-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.time-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.field-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field-sep {
+  font-size: clamp(22px, 4vw, 34px);
+  color: var(--muted);
+  padding-bottom: 22px;
+}
+
+.presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.chip {
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+  color: var(--digit);
+}
+
+/* ---------- Controls ---------- */
+.controls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px clamp(16px, 3vw, 40px);
+  flex-wrap: wrap;
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+.controls-left,
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.btn:hover {
+  color: var(--digit);
+  border-color: var(--accent);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0c0f14;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  color: #0c0f14;
+  filter: brightness(1.06);
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 150ms ease;
+}
+
+.icon-btn:hover {
+  color: var(--digit);
+  border-color: var(--accent);
+}
+
+.volume {
+  width: 96px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.tick-select {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.tick-select:hover,
+.tick-select:focus {
+  color: var(--digit);
+  border-color: var(--accent);
+}
+
+.theme-swatches {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.swatch:hover {
+  transform: scale(1.12);
+}
+
+.swatch[aria-pressed='true'] {
+  border-color: var(--digit);
+}
+
+/* ---------- State-driven visibility ---------- */
+.app[data-state='running'] .setup,
+.app[data-state='complete'] .setup {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  position: absolute;
+}
+
+.app[data-state='running'] #btn-start,
+.app[data-state='complete'] #btn-start {
+  display: none;
+}
+
+.app[data-state='idle'] #btn-pause,
+.app[data-state='complete'] #btn-pause {
+  display: none;
+}
+
+/* Auto-hide controls while focusing. */
+.app.controls-hidden .controls {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+.app.controls-hidden {
+  cursor: none;
+}
+
+/* Gentle pulse when the countdown completes. */
+.app[data-state='complete'] .clock {
+  animation: completePulse 1.1s ease-in-out infinite;
+}
+
+@keyframes completePulse {
+  0%,
+  100% {
+    filter: none;
+  }
+  50% {
+    filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 60%, transparent));
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .flip__leaf--top,
+  .flip__leaf--bottom {
+    display: none;
+  }
+  .flip.flipping .flip__leaf--top,
+  .flip.flipping .flip__leaf--bottom {
+    animation: none;
+  }
+  .app[data-state='complete'] .clock {
+    animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .controls {
+    justify-content: center;
+  }
+}

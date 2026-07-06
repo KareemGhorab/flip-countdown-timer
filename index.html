@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="A minimalist flip-clock countdown timer to help you focus." />
+    <title>Focus Countdown</title>
+  </head>
+  <body>
+    <div id="app" class="app" data-state="idle">
+      <main class="stage">
+        <div id="clock" class="clock" aria-live="off" aria-label="Countdown timer"></div>
+
+        <form id="setup" class="setup" autocomplete="off">
+          <div class="time-inputs">
+            <label class="field">
+              <input id="input-hh" class="time-input" type="number" min="0" max="99" inputmode="numeric" value="01" />
+              <span class="field-label">hours</span>
+            </label>
+            <span class="field-sep">:</span>
+            <label class="field">
+              <input id="input-mm" class="time-input" type="number" min="0" max="59" inputmode="numeric" value="00" />
+              <span class="field-label">min</span>
+            </label>
+            <span class="field-sep">:</span>
+            <label class="field">
+              <input id="input-ss" class="time-input" type="number" min="0" max="59" inputmode="numeric" value="00" />
+              <span class="field-label">sec</span>
+            </label>
+          </div>
+          <div class="presets" id="presets">
+            <button type="button" class="chip" data-minutes="30">30m</button>
+            <button type="button" class="chip" data-minutes="60">1h</button>
+            <button type="button" class="chip" data-minutes="120">2h</button>
+            <button type="button" class="chip" data-minutes="180">3h</button>
+            <button type="button" class="chip" data-minutes="240">4h</button>
+            <button type="button" class="chip" data-minutes="300">5h</button>
+            <button type="button" class="chip" data-minutes="360">6h</button>
+            <button type="button" class="chip" data-minutes="420">7h</button>
+            <button type="button" class="chip" data-minutes="480">8h</button>
+          </div>
+        </form>
+      </main>
+
+      <div class="controls" id="controls">
+        <div class="controls-left">
+          <button id="btn-start" class="btn btn-primary" type="button">Start</button>
+          <button id="btn-pause" class="btn" type="button">Pause</button>
+          <button id="btn-reset" class="btn" type="button">Reset</button>
+        </div>
+
+        <div class="controls-right">
+          <button id="btn-mute" class="icon-btn" type="button" aria-label="Toggle sound" title="Toggle sound"></button>
+          <input id="volume" class="volume" type="range" min="0" max="100" value="35" aria-label="Tick volume" title="Tick volume" />
+          <select id="tick-select" class="tick-select" aria-label="Tick sound" title="Tick sound"></select>
+          <div id="themes" class="theme-swatches" role="group" aria-label="Theme"></div>
+          <button id="btn-fullscreen" class="icon-btn" type="button" aria-label="Toggle fullscreen" title="Fullscreen">&#9974;</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
