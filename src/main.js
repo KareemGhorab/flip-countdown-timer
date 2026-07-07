@@ -3,6 +3,7 @@ import { CountdownTimer, formatParts } from './timer.js';
 import { FlipClock } from './flipClock.js';
 import { TickAudio, TICKS } from './audio.js';
 import { THEMES, applyTheme, saveTheme, loadTheme } from './themes.js';
+import { saveSession, loadSession, clearSession } from './persistence.js';
 
 const MUTE_KEY = 'fct.muted';
 const VOLUME_KEY = 'fct.volume';
@@ -51,6 +52,10 @@ timer.onTick = (remaining) => {
   const running = timer.state === 'running';
   clock.update(parts, { animate: running });
   if (running && remaining > 0) audio.playTick();
+  // Coarse periodic save (~every 10s) so an abrupt sleep loses at most ~10s.
+  if (running && remaining > 0 && remaining % 10 === 0) {
+    saveSession({ remaining, totalSeconds: timer.totalSeconds });
+  }
 };
 
 timer.onComplete = () => {
@@ -64,10 +69,16 @@ timer.onStateChange = (state) => {
   } else {
     showControls();
   }
+  if (state === 'paused') {
+    saveSession({ remaining: timer.remaining, totalSeconds: timer.totalSeconds });
+  } else if (state === 'idle' || state === 'complete') {
+    clearSession();
+  }
 };
 
-// Initialize the display from the default inputs.
-setFromInputs();
+// Restore runs at the end of module init (see bottom of file) so that all
+// top-level bindings (e.g. hideTimeoutId) and event listeners exist before
+// onStateChange fires during restore.
 
 // ---------- Controls ----------
 btnStart.addEventListener('click', () => {
@@ -193,7 +204,40 @@ window.addEventListener('mousemove', onActivity);
 window.addEventListener('touchstart', onActivity, { passive: true });
 window.addEventListener('mousedown', onActivity);
 
+// ---------- Stop-and-persist when hidden / slept / refreshed ----------
+// A browser cannot distinguish system sleep from a hidden/minimized tab, so we
+// freeze the countdown whenever the page is not visible. pause() snaps the
+// remaining time and triggers the save via onStateChange.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && timer.state === 'running') timer.pause();
+});
+
+window.addEventListener('pagehide', () => {
+  if (timer.state === 'running') timer.pause();
+});
+
+// Restore a saved session if present, otherwise start from the inputs.
+// Deferred to here so every top-level binding and listener above is ready.
+initFromSessionOrInputs();
+
 // ---------- Helpers ----------
+function initFromSessionOrInputs() {
+  const saved = loadSession();
+  if (saved) {
+    syncInputsFromSeconds(saved.totalSeconds);
+    timer.restorePaused(saved.remaining, saved.totalSeconds);
+    return;
+  }
+  setFromInputs();
+}
+
+function syncInputsFromSeconds(totalSeconds) {
+  const parts = formatParts(totalSeconds);
+  inputs.hh.value = parts.hh;
+  inputs.mm.value = parts.mm;
+  inputs.ss.value = parts.ss;
+}
+
 function setFromInputs() {
   timer.set(getTotalSeconds());
 }

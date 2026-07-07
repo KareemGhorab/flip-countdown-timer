@@ -59,6 +59,20 @@ export class CountdownTimer {
     this.onTick(this.remaining);
   }
 
+  /**
+   * Restore a persisted session into a stopped (paused) state at the given
+   * remaining time, so the user can resume from where they left off after a
+   * refresh or sleep. Never resumes counting on its own.
+   */
+  restorePaused(remaining, totalSeconds) {
+    this._clear();
+    this.totalSeconds = Math.max(0, Math.floor(totalSeconds));
+    this.remaining = Math.max(0, Math.floor(remaining));
+    this._deadline = 0;
+    this._setState('paused');
+    this.onTick(this.remaining);
+  }
+
   _scheduleNext() {
     // Align to the next whole-second boundary relative to the deadline so ticks
     // land cleanly on second changes.

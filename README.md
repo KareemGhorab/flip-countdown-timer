@@ -17,6 +17,7 @@ A minimalist, themeable countdown timer with a flip-clock ("flipping paper") ani
 - **Accessibility** — respects `prefers-reduced-motion` (disables flip animation)
 - **Fullscreen** — toggle for distraction-free focus
 - **Persistence** — theme, tick sound, volume, and mute preference saved in `localStorage`
+- **Resumable timer** — refreshing the page or sleeping the computer freezes the countdown and saves its remaining time, so you can start again from where you left off (the timer pauses whenever its tab is hidden, so sleeping never burns your time)
 
 ## Getting started
 
