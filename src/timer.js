@@ -45,6 +45,7 @@ export class CountdownTimer {
     // Snap remaining to the truthful value based on the deadline.
     this.remaining = Math.max(0, Math.round((this._deadline - Date.now()) / 1000));
     this._setState('paused');
+    this.onTick(this.remaining, { silent: true });
   }
 
   toggle() {
@@ -55,8 +56,77 @@ export class CountdownTimer {
   reset() {
     this._clear();
     this.remaining = this.totalSeconds;
+    this._deadline = 0;
     this._setState('idle');
     this.onTick(this.remaining);
+  }
+
+  /** Restore timer state after a page load. */
+  restore({ state, totalSeconds, remaining, deadline }) {
+    this._clear();
+    this.totalSeconds = Math.max(0, Math.floor(totalSeconds));
+    this._deadline = deadline || 0;
+
+    if (state === 'running' && this._deadline > 0) {
+      this.remaining = Math.max(0, Math.round((this._deadline - Date.now()) / 1000));
+      if (this.remaining <= 0) {
+        this.remaining = 0;
+        this._setState('complete');
+        this.onTick(0, { silent: true });
+        this.onComplete({ restored: true });
+        return;
+      }
+      this._setState('running');
+      this.onTick(this.remaining, { silent: true });
+      this._scheduleNext();
+      return;
+    }
+
+    if (state === 'paused') {
+      this.remaining = Math.max(0, Math.floor(remaining));
+      this._setState('paused');
+      this.onTick(this.remaining, { silent: true });
+      return;
+    }
+
+    if (state === 'complete') {
+      this.remaining = 0;
+      this._setState('complete');
+      this.onTick(0, { silent: true });
+      return;
+    }
+
+    this.remaining = Math.max(0, Math.floor(remaining ?? this.totalSeconds));
+    this._setState('idle');
+    this.onTick(this.remaining, { silent: true });
+  }
+
+  /**
+   * Recalculate from the stored deadline after sleep or tab throttling.
+   * Keeps the countdown accurate without replaying missed ticks.
+   */
+  sync() {
+    if (this.state !== 'running') return;
+    this._clear();
+    this.remaining = Math.max(0, Math.round((this._deadline - Date.now()) / 1000));
+    this.onTick(this.remaining, { silent: true });
+
+    if (this.remaining <= 0) {
+      this._setState('complete');
+      this.onComplete();
+      return;
+    }
+    this._scheduleNext();
+  }
+
+  /** Snapshot for persistence. */
+  getSnapshot() {
+    return {
+      state: this.state,
+      totalSeconds: this.totalSeconds,
+      remaining: this.remaining,
+      deadline: this.state === 'running' ? this._deadline : null,
+    };
   }
 
   _scheduleNext() {

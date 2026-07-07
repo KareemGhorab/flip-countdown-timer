@@ -3,6 +3,7 @@ import { CountdownTimer, formatParts } from './timer.js';
 import { FlipClock } from './flipClock.js';
 import { TickAudio, TICKS } from './audio.js';
 import { THEMES, applyTheme, saveTheme, loadTheme } from './themes.js';
+import { saveTimerState, loadTimerState } from './persistence.js';
 
 const MUTE_KEY = 'fct.muted';
 const VOLUME_KEY = 'fct.volume';
@@ -46,19 +47,22 @@ updateMuteButton();
 buildTickOptions();
 
 // ---------- Timer wiring ----------
-timer.onTick = (remaining) => {
+timer.onTick = (remaining, opts = {}) => {
   const parts = formatParts(remaining);
   const running = timer.state === 'running';
-  clock.update(parts, { animate: running });
-  if (running && remaining > 0) audio.playTick();
+  clock.update(parts, { animate: running && !opts.silent });
+  if (running && remaining > 0 && !opts.silent) audio.playTick();
+  persistTimerState();
 };
 
-timer.onComplete = () => {
-  audio.playComplete();
+timer.onComplete = (opts = {}) => {
+  persistTimerState();
+  if (!opts.restored) audio.playComplete();
 };
 
 timer.onStateChange = (state) => {
   app.dataset.state = state;
+  persistTimerState();
   if (state === 'running') {
     scheduleControlsHide();
   } else {
@@ -66,8 +70,7 @@ timer.onStateChange = (state) => {
   }
 };
 
-// Initialize the display from the default inputs.
-setFromInputs();
+restoreOrInit();
 
 // ---------- Controls ----------
 btnStart.addEventListener('click', () => {
@@ -193,7 +196,47 @@ window.addEventListener('mousemove', onActivity);
 window.addEventListener('touchstart', onActivity, { passive: true });
 window.addEventListener('mousedown', onActivity);
 
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (timer.state === 'running') {
+    timer.sync();
+    persistTimerState();
+  }
+});
+
+window.addEventListener('pagehide', persistTimerState);
+
 // ---------- Helpers ----------
+function restoreOrInit() {
+  const saved = loadTimerState();
+  if (saved) {
+    syncInputsFromSeconds(saved.inputSeconds ?? saved.totalSeconds);
+    timer.restore({
+      state: saved.state,
+      totalSeconds: saved.totalSeconds,
+      remaining: saved.remaining,
+      deadline: saved.deadline,
+    });
+    return;
+  }
+  setFromInputs();
+}
+
+function persistTimerState() {
+  const snapshot = timer.getSnapshot();
+  saveTimerState({
+    ...snapshot,
+    inputSeconds: getTotalSeconds(),
+  });
+}
+
+function syncInputsFromSeconds(totalSeconds) {
+  const parts = formatParts(totalSeconds);
+  inputs.hh.value = parts.hh;
+  inputs.mm.value = parts.mm;
+  inputs.ss.value = parts.ss;
+}
+
 function setFromInputs() {
   timer.set(getTotalSeconds());
 }
