@@ -16,7 +16,7 @@ A minimalist, themeable countdown timer with a flip-clock ("flipping paper") ani
 - **Auto-hiding controls** — UI fades away while the timer runs; reappears on mouse move
 - **Accessibility** — respects `prefers-reduced-motion` (disables flip animation)
 - **Fullscreen** — toggle for distraction-free focus
-- **Persistence** — theme, tick sound, volume, mute preference, and active countdown state saved in `localStorage` (survives refresh and sleep)
+- **Persistence** — theme, tick sound, volume, and mute preference saved in `localStorage`
 
 ## Getting started
 
@@ -68,7 +68,6 @@ Deploy the `dist/` folder to any static host (Netlify, Vercel, GitHub Pages, etc
 | `src/flipClock.js` | Flip-clock digit renderer and CSS flip animation |
 | `src/audio.js` | Web Audio tick voices and completion chime |
 | `src/themes.js` | Dark theme definitions (CSS custom properties) |
-| `src/persistence.js` | Saves/restores countdown state across refresh and sleep |
 | `src/style.css` | Layout, flip-card styling, responsive design |
 
 ## Tech stack
